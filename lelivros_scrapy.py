@@ -1,31 +1,42 @@
-#!/usr/bin/python3
-import requests, bs4, sys
-arq = open('links_lelivro','w')
-file = open('livros_lelivros', 'w')
-ant = 0
-x=int(input('Qual a número de páginas que você quer examinar?'))
+# -*- coding: utf-8 -*-
+
+from bs4 import BeautifulSoup as bs
+from requests import get
+
+def save(link, flag):
+	if flag == 0:
+		with open('livros_lelivros.txt','a',encoding='utf-8') as first:
+			first.write(link)
+	else:
+		with open('livros_index.txt','a',encoding='utf-8') as second:
+			second.write(link)
+
 def examinalink(store):
-	sitio=requests.get(store)
-	s=bs4.BeautifulSoup(sitio.content, "lxml")
+	sitio = get(store)
+	s = bs(sitio.content, "lxml")
 	for link in s.find_all("a"):
 		if str(link.get('href')).find('=.epub')!=-1:
-			file = open('livros_lelivros', 'a')
-			file.write (str(link.get('href'))+'\n')
-			file.close()
-		
-for i in range(x):
-	site=requests.get('http://lelivros.love/page/'+str(i)+'/')
-	try:
-		site.raise_for_status()
-	except Exception as exc:
-		print('Ocorrem problemas: %s' %(exc))
-	sitesp=bs4.BeautifulSoup(site.content, "lxml")
+			save(str(link.get('href')) + '\n',1)
+
+def examinapage(page):
+	ant = 0
+	sitesp = bs(page.content, "lxml")
 	for link in sitesp.find_all("a"):
 		if len(str(link.get('href'))) > 65:
 			atual = link.get('href')
 			if atual != ant:
-				arq.write (str(link.get('href'))+'\n')
+				save(str(link.get('href')) + '\n',0)
 				ant=atual
 				examinalink(str(link.get('href')))
-	arq.write('Pagina '+str(i+1)+ '\n')
-arq.close()
+
+def queue(pages):
+	for i in range(x):
+		site = get('http://lelivros.love/page/'+str(i)+'/')
+		examinapage(site)
+		save('Pagina '+str(i+1)+ '\n',0)
+
+if __name__ == "__main__":
+	x = int(input('Qual a número de páginas que você quer examinar?'))
+	with open('livros_lelivros.txt','w') as first, open('livros_index.txt','w') as second:
+		pass
+	queue(x)
